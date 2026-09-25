@@ -21,7 +21,7 @@
 - `js/render.js` — 牌・結果の描画
 - `js/app.js` — 計算画面
 - `js/quiz.js` — クイズ
-- `tests/` — `npm test`（= `node --test tests/`）
+- `tests/` — `npm test`（= `node --test tests/*.test.js`）
 
 ## ローカルで動かす
 
