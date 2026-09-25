@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>麻雀点数計算</title>
+<meta name="description" content="手牌を入れるだけで役・符・点数を自動計算。点数計算クイズつき。">
+<meta name="theme-color" content="#14532d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="top">
+  <h1>麻雀点数計算</h1>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="calc" aria-selected="true">計算</button>
+    <button role="tab" data-tab="quiz" aria-selected="false">クイズ</button>
+    <button role="tab" data-tab="rules" aria-selected="false">ルール</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ 計算 ============ -->
+  <section id="tab-calc">
+    <div class="board">
+      <div class="hand-area">
+        <div id="hand" class="hand" aria-live="polite"></div>
+        <p id="hand-hint" class="hint"></p>
+      </div>
+      <div id="indicators" class="indicators"></div>
+    </div>
+
+    <div class="modes" role="radiogroup" aria-label="入力先">
+      <button data-mode="hand" aria-pressed="true">手牌</button>
+      <button data-mode="chi" aria-pressed="false">チー</button>
+      <button data-mode="pon" aria-pressed="false">ポン</button>
+      <button data-mode="minkan" aria-pressed="false">明槓</button>
+      <button data-mode="ankan" aria-pressed="false">暗槓</button>
+      <button data-mode="dora" aria-pressed="false">ドラ表示</button>
+      <button data-mode="ura" aria-pressed="false">裏ドラ</button>
+    </div>
+    <p id="mode-hint" class="hint mode-hint"></p>
+
+    <div id="palette" class="palette"></div>
+    <div class="edit-row">
+      <button id="undo" class="ghost">↩ 1つ戻す</button>
+      <button id="clear" class="ghost">全部消す</button>
+    </div>
+
+    <div class="conds">
+      <div class="cond-row">
+        <span class="lbl">和了</span>
+        <div class="seg" data-key="tsumo">
+          <button data-v="false">ロン</button><button data-v="true">ツモ</button>
+        </div>
+      </div>
+      <div class="cond-row">
+        <span class="lbl">自風</span>
+        <div class="seg" data-key="seatWind">
+          <button data-v="0">東<small>親</small></button><button data-v="1">南</button><button data-v="2">西</button><button data-v="3">北</button>
+        </div>
+      </div>
+      <div class="cond-row">
+        <span class="lbl">場風</span>
+        <div class="seg" data-key="roundWind">
+          <button data-v="0">東</button><button data-v="1">南</button><button data-v="2">西</button><button data-v="3">北</button>
+        </div>
+      </div>
+      <div class="cond-row">
+        <span class="lbl">立直</span>
+        <div class="seg" data-key="riichi">
+          <button data-v="0">なし</button><button data-v="1">立直</button><button data-v="2">ダブル</button>
+        </div>
+      </div>
+      <div class="toggles">
+        <button class="tog" data-key="ippatsu">一発</button>
+        <button class="tog" data-key="haitei"><span data-ron="河底撈魚" data-tsumo="海底摸月">河底撈魚</span></button>
+        <button class="tog" data-key="rinshan">嶺上開花</button>
+        <button class="tog" data-key="chankan">槍槓</button>
+        <button class="tog" data-key="tenchi"><span data-oya="天和" data-ko="地和">地和</span></button>
+      </div>
+      <div class="cond-row steppers">
+        <div class="stepper" data-key="aka" data-max="4"><span class="lbl">赤ドラ</span><button data-d="-1" aria-label="減らす">−</button><output>0</output><button data-d="1" aria-label="増やす">＋</button></div>
+        <div class="stepper" data-key="honba" data-max="20"><span class="lbl">本場</span><button data-d="-1" aria-label="減らす">−</button><output>0</output><button data-d="1" aria-label="増やす">＋</button></div>
+      </div>
+    </div>
+
+    <div id="detail" class="card detail" hidden></div>
+    <div class="spacer"></div>
+
+    <div id="result-bar" class="result-bar">
+      <div class="rb-main"><span id="rb-points">—</span></div>
+      <div id="rb-sub" class="rb-sub">手牌を入れてください</div>
+    </div>
+  </section>
+
+  <!-- ============ クイズ ============ -->
+  <section id="tab-quiz" hidden>
+    <div class="quiz-score" id="quiz-score"></div>
+    <div class="card quiz-card">
+      <div id="q-conds" class="q-conds"></div>
+      <div id="q-hand" class="hand q-hand"></div>
+      <div id="q-inds" class="indicators"></div>
+      <p class="q-ask">何点？</p>
+      <div id="q-choices" class="choices"></div>
+      <div id="q-result" hidden></div>
+    </div>
+    <div class="quiz-opts">
+      <label><input type="checkbox" id="q-limit"> 満貫以上も出す</label>
+      <button id="q-next" class="primary">次の問題</button>
+    </div>
+  </section>
+
+  <!-- ============ ルール ============ -->
+  <section id="tab-rules" hidden>
+    <div class="card rules">
+      <label class="rule"><span>喰いタン<small>鳴いても断么九がつく</small></span><input type="checkbox" data-rule="kuitan"></label>
+      <label class="rule"><span>切り上げ満貫<small>4翻30符・3翻60符を満貫にする</small></span><input type="checkbox" data-rule="kiriage"></label>
+      <label class="rule"><span>数え役満<small>13翻以上を役満にする（なしなら三倍満）</small></span><input type="checkbox" data-rule="kazoe"></label>
+      <label class="rule"><span>ダブル役満<small>国士十三面・四暗刻単騎・純正九蓮・大四喜</small></span><input type="checkbox" data-rule="doubleYakuman"></label>
+      <div class="rule"><span>連風牌の雀頭<small>場風＝自風の風牌を雀頭にしたとき</small></span>
+        <div class="seg small" data-rule-seg="renpuFu"><button data-v="2">2符</button><button data-v="4">4符</button></div>
+      </div>
+    </div>
+    <p class="note">設定はこの端末に保存されます。</p>
+    <div class="card howto">
+      <h3>使い方</h3>
+      <ol>
+        <li>「手牌」を選んだまま、下の牌をタップして手牌を入れる。<b>最後に入れた牌が和了牌</b>になります（手牌の牌をタップすると和了牌を変えられます）。</li>
+        <li>鳴いている面子は「チー」「ポン」「明槓」「暗槓」を選んでから牌をタップ。チーは<b>いちばん小さい牌</b>をタップします。</li>
+        <li>ドラ表示牌・裏ドラ表示牌も同じように入れられます。赤ドラは枚数で入れます。</li>
+        <li>ロン/ツモ・風・立直などを選ぶと、下のバーに点数が出ます。</li>
+      </ol>
+      <p>間違えたら「1つ戻す」。入れた副露やドラ表示牌はタップで消せます。</p>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
